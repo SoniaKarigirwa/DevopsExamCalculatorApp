@@ -1,36 +1,56 @@
 package com.devops.devopsexamt1.services;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
-import com.devops.devopsexamt1.dtos.DoMathRequestDto;
 import com.devops.devopsexamt1.exceptions.InvalidOperationException;
 import com.devops.devopsexamt1.serviceImpls.MathOperatorImpl;
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@RunWith(MockitoJUnitRunner.class)
 public class MathOperatorTest {
 
-    @InjectMocks
-    private MathOperatorImpl mathOperatorService;
+    private final MathOperatorImpl mathOperator;
+
+    public MathOperatorTest() {
+        this.mathOperator = new MathOperatorImpl();
+    }
 
     @Test
-    public void should_create_math_operation_success() throws InvalidOperationException {
-        double operator1 = 4;
-        double operator2 = 9;
-        String operation = "+";
-
-        double mathOperation = mathOperatorService.doMath(operator1,operator2, operation);
-        when(mathOperatorService.doMath(operator1, operator2, operation)).thenReturn(mathOperation);
-
-        double actualMathOperator = mathOperatorService.doMath(operator1, operator2, operation);
-
-        assertThat(mathOperation).usingRecursiveComparison().isEqualTo(actualMathOperator);
+    public void givenTwoOperands_whenAdded_returnsSum() throws InvalidOperationException {
+        double actual = mathOperator.doMath(1, 2, "+");
+        double expected = 3;
+        assertEquals(expected, actual);
     }
+
+    @Test
+    public void givenTwoOperands_whenDivided_returnsQuotient() throws InvalidOperationException {
+        double actual = mathOperator.doMath(4, 2, "/");
+        double expected = 2;
+        assertEquals(expected, actual);
+    }
+    @Test
+    public void givenAnumber_whenDividedByZero_itThrowsException() throws InvalidOperationException {
+        assertThrows(InvalidOperationException.class, () ->  mathOperator.doMath(34, 0, "/"));
+    }
+
+    @Test
+    public void givenTwoOperands_whenSubstracted_returnsDifference() throws InvalidOperationException {
+        double actual = mathOperator.doMath(10, 5, "-");
+        double expected = 5;
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void givenTwoOperands_whenMultiplied_returnsProduct() throws InvalidOperationException {
+        double actual = mathOperator.doMath(10, 5, "*");
+        double expected = 50;
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void givenAnUnknownOperation_whenComputed_throwsRuntimeException() throws InvalidOperationException {
+        assertThrows(RuntimeException.class, () -> mathOperator.doMath(10, 5, "&"));
+    }
+
 
 }

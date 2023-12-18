@@ -1,33 +1,74 @@
 package com.devops.devopsexamt1.controllers;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.junit4.SpringRunner;
+import com.devops.devopsexamt1.serviceImpls.MathOperatorImpl;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.devops.devopsexamt1.dtos.DoMathRequestDto;
-import com.devops.devopsexamt1.payload.ApiResponse;
-
-@RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+import com.devops.devopsexamt1.exceptions.InvalidOperationException;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+@ExtendWith(SpringExtension.class)
+@SpringBootTest
+@AutoConfigureMockMvc
 public class MathControllerTest {
-
+    @Mock
+    private static MathOperatorImpl mathOperatorMock = mock(MathOperatorImpl.class);
     @Autowired
-    private TestRestTemplate restTemplate;
-
+    private MockMvc mockMvc;
+    @BeforeAll
+    public static void setUp() throws InvalidOperationException {
+        when(mathOperatorMock.doMath(1, 2, "+")).thenReturn(3.0);
+        when(mathOperatorMock.doMath(4, 0, "/")).thenThrow(new InvalidOperationException("Cannot divide by zero"));
+        when(mathOperatorMock.doMath(6, 6, "&")).thenThrow(new RuntimeException("Unknown operation"));
+    }
     @Test
-    public void doMathOperation_Success(){
-        DoMathRequestDto dto = new DoMathRequestDto(2, 5, "+");
-        DoMathRequestDto dto1 = new DoMathRequestDto(200, 50, "*");
-        DoMathRequestDto dto2 = new DoMathRequestDto(5, 10, "/");
-        DoMathRequestDto dto3 = new DoMathRequestDto(34, 54, "-");
-        ResponseEntity<ApiResponse> response = this.    restTemplate.postForEntity("/api/v1/do_math",dto,ApiResponse.class);
-
-        assertEquals(200, response.getStatusCode().value());
+    void shouldreturnOperationResult() throws InvalidOperationException {
+        when(mathOperatorMock.doMath(1, 2, "+")).thenReturn(3.0);
+        assertEquals(3.0, mathOperatorMock.doMath(1, 2, "+"));
+    }
+    @Test
+    void givenANumber_whenDividedByZero_itThrowAnError() throws InvalidOperationException {
+        when(mathOperatorMock.doMath(4, 0, "/")).thenThrow(new InvalidOperationException("Cannot divide by zero"));
+        assertThrows(InvalidOperationException.class, () -> mathOperatorMock.doMath(4, 0, "/"));
+    }
+    @Test
+    void givenAnUnknownOperator_whenUsed_itThrowsRuntimeException() throws InvalidOperationException {
+        when(mathOperatorMock.doMath(6, 6, "&")).thenThrow(new RuntimeException("Unknown operation"));
+        assertThrows(RuntimeException.class, () -> mathOperatorMock.doMath(6, 6, "&"));
+    }
+    @Test
+    public void should_return_calcResponse() throws Exception {
+        when(mathOperatorMock.doMath(2.0, 3.0, "+")).thenReturn(5.0);
+        DoMathRequestDto doMathRequest = new DoMathRequestDto(2, 3, "+");
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/math-operator/do-math")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content((new ObjectMapper()).writeValueAsString(doMathRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.calcResponse").value(5.0));
+    }
+    @Test
+    public void should_returnNotAcceptable() throws Exception {
+        when(mathOperatorMock.doMath(4, 0, "/")).thenThrow(new InvalidOperationException("Cannot divide by zero"));
+        DoMathRequestDto doMathRequest = new DoMathRequestDto(4, 0, "/");
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/math-operator/do-math")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content((new ObjectMapper()).writeValueAsString(doMathRequest)))
+                .andExpect(status().isNotAcceptable());
     }
 }
