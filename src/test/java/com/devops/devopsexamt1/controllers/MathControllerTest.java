@@ -32,9 +32,9 @@ public class MathControllerTest {
 
     @BeforeEach
     public void setUp() throws InvalidOperationException {
-        when(mathOperatorMock.doMath(1, 2, "+")).thenReturn(3.0);
-        when(mathOperatorMock.doMath(4, 0, "/")).thenThrow(new InvalidOperationException("Cannot divide by zero"));
-        when(mathOperatorMock.doMath(6, 6, "&")).thenThrow(new RuntimeException("Unknown operation"));
+        when(mathOperatorMock.doMath(5, 6, "+")).thenReturn(11.0);
+        when(mathOperatorMock.doMath(10, 0, "/")).thenThrow(new InvalidOperationException("Cannot divide by zero"));
+        when(mathOperatorMock.doMath(3, 4, "&")).thenThrow(new RuntimeException("Unknown operation"));
     }
 
     @Test
